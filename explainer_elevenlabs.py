@@ -581,7 +581,7 @@ def create_html(selected_text, agent_id, supabase_url, supabase_anon_key,
             async function loadUsers() {{
                 const db = ensureFirebase();
                 if (!db) {{
-                    userResult.textContent = '';
+                    document.body.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 14px 18px; border-radius: 10px; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; color:#333; font-size:14px; font-weight:600;">log into dashboard to use</div></div>`;
                     return;
                 }}
                 userResult.textContent = '';
@@ -592,7 +592,7 @@ def create_html(selected_text, agent_id, supabase_url, supabase_anon_key,
                     const total = snapshot.size;
 
                     if (!total) {{
-                        userResult.textContent = '';
+                        document.body.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 14px 18px; border-radius: 10px; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; color:#333; font-size:14px; font-weight:600;">log into dashboard to use</div></div>`;
                         return;
                     }}
 
@@ -608,7 +608,7 @@ def create_html(selected_text, agent_id, supabase_url, supabase_anon_key,
                     }}
                 }} catch (e) {{
                     console.error('User lookup error:', e);
-                    userResult.textContent = '';
+                    document.body.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 14px 18px; border-radius: 10px; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; color:#333; font-size:14px; font-weight:600;">log into dashboard to use</div></div>`;
                 }}
             }}
             // Automatically load on page render
