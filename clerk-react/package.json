@@ -12,6 +12,7 @@
   "dependencies": {
     "@clerk/clerk-react": "^5.58.0",
     "@types/react-router-dom": "^5.3.3",
+    "firebase": "^12.6.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.10.1"

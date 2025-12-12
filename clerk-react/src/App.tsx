@@ -1,7 +1,9 @@
 
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
+import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/clerk-react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './Dashboard';
+import { useEffect } from 'react';
+import { saveUserToFirestore } from './firebase';
 
 export default function App() {
   return (
@@ -51,7 +53,8 @@ export default function App() {
                     </div>
                   </SignedOut>
                   <SignedIn>
-                    <Dashboard />
+                      <SaveUserOnSignIn />
+                      <Dashboard />
                   </SignedIn>
                 </>
               }
@@ -62,3 +65,28 @@ export default function App() {
     </div>
   );
 }
+
+  function SaveUserOnSignIn() {
+    // `useUser` gives access to the currently signed in Clerk user.
+    const { user } = useUser();
+
+    useEffect(() => {
+      if (!user) return;
+
+      const safeUser: any = {
+        id: user.id,
+        // Clerk exposes primary email at `primaryEmailAddress` in some SDK versions
+        email:
+          (user.primaryEmailAddress && (user.primaryEmailAddress as any).emailAddress) ||
+          (user.emailAddresses && user.emailAddresses[0] && (user.emailAddresses[0] as any).emailAddress) ||
+          null,
+        firstName: (user.firstName as string) || null,
+        lastName: (user.lastName as string) || null,
+      };
+
+      // Fire-and-forget save; log errors to console.
+      saveUserToFirestore(safeUser).catch(err => console.error('saveUserToFirestore error:', err));
+    }, [user]);
+
+    return null;
+  }

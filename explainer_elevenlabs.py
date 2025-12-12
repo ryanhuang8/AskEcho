@@ -7,8 +7,10 @@ from pathlib import Path
 import json
 import subprocess
 
-def create_html(selected_text, agent_id, supabase_url, supabase_anon_key):
-    """Create HTML file with ElevenLabs widget and dynamic variables"""
+def create_html(selected_text, agent_id, supabase_url, supabase_anon_key,
+                firebase_api_key=None, firebase_auth_domain=None,
+                firebase_project_id=None, firebase_database_url=None):
+    """Create HTML file with ElevenLabs widget, Supabase links, and Firebase user lookup"""
     
     # Create dynamic variables object
     dynamic_vars = {
@@ -331,6 +333,9 @@ def create_html(selected_text, agent_id, supabase_url, supabase_anon_key):
     
     <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.2/firebase-firestore-compat.js"></script>
     
     <script>
         // Handle voice selection
@@ -535,6 +540,85 @@ def create_html(selected_text, agent_id, supabase_url, supabase_anon_key):
             subscribeToLinks();
         }});
     </script>
+
+    <!-- Firebase Users Lookup -->
+    <script>
+        const FIREBASE_CONFIG = {{
+            apiKey: '{firebase_api_key or ''}',
+            authDomain: '{firebase_auth_domain or ''}',
+            projectId: '{firebase_project_id or ''}',
+            databaseURL: '{firebase_database_url or ''}',
+        }};
+
+        const hasFirebase = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId;
+
+        function ensureFirebase() {{
+            if (!hasFirebase) return null;
+            try {{
+                const app = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+                return firebase.firestore();
+            }} catch (e) {{
+                console.error('Firebase init error:', e);
+                return null;
+            }}
+        }}
+
+        function renderUserSection() {{
+            const container = document.querySelector('.content-container');
+            const section = document.createElement('div');
+            section.style.padding = '16px';
+            section.style.background = 'rgba(255,255,255,0.95)';
+            section.style.backdropFilter = 'blur(10px)';
+            section.style.borderTop = '1px solid rgba(0,0,0,0.1)';
+
+            section.innerHTML = `
+                <div id="userResult" style="font-size:13px; color:#333; padding-top:2px;"></div>
+            `;
+            container.appendChild(section);
+
+            const userResult = section.querySelector('#userResult');
+
+            async function loadUsers() {{
+                const db = ensureFirebase();
+                if (!db) {{
+                    userResult.textContent = '';
+                    return;
+                }}
+                userResult.textContent = '';
+
+                try {{
+                    // Firestore: get all docs in 'users'
+                    const snapshot = await db.collection('users').get();
+                    const total = snapshot.size;
+
+                    if (!total) {{
+                        userResult.textContent = '';
+                        return;
+                    }}
+
+                    const firstDoc = snapshot.docs[0];
+                    const firstData = firstDoc.data() || {{}};
+
+                    const firstName = firstData.firstName || firstData.firstname || (firstData.name ? firstData.name.split(' ')[0] : '');
+                    const lastName = firstData.lastName || firstData.lastname || (firstData.name ? firstData.name.split(' ').slice(1).join(' ') : '');
+                    if (firstName || lastName) {{
+                        userResult.textContent = `User: ${{firstName}} ${{lastName}}`.trim();
+                    }} else {{
+                        userResult.textContent = '';
+                    }}
+                }} catch (e) {{
+                    console.error('User lookup error:', e);
+                    userResult.textContent = '';
+                }}
+            }}
+            // Automatically load on page render
+            loadUsers();
+        }}
+
+        window.addEventListener('load', () => {{
+            renderUserSection();
+        }});
+    </script>
 </body>
 </html>"""
     
@@ -628,6 +712,10 @@ if __name__ == "__main__":
     AGENT_ID = os.getenv("ELEVENLABS_AGENT_ID")
     SUPABASE_URL = os.getenv("SUPABASE_URL")
     SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
+    FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
+    FIREBASE_AUTH_DOMAIN = os.getenv("FIREBASE_AUTH_DOMAIN")
+    FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID")
+    FIREBASE_DATABASE_URL = os.getenv("FIREBASE_DATABASE_URL")
     
     if not AGENT_ID:
         print("Error: ELEVENLABS_AGENT_ID not found in .env file", file=sys.stderr)
@@ -650,7 +738,16 @@ if __name__ == "__main__":
     html_file = Path(temp_dir) / "elevenlabs_assistant.html"
     
     # Write HTML
-    html_content = create_html(selected_text, AGENT_ID, SUPABASE_URL, SUPABASE_ANON_KEY)
+    html_content = create_html(
+        selected_text,
+        AGENT_ID,
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
+        firebase_api_key=FIREBASE_API_KEY,
+        firebase_auth_domain=FIREBASE_AUTH_DOMAIN,
+        firebase_project_id=FIREBASE_PROJECT_ID,
+        firebase_database_url=FIREBASE_DATABASE_URL,
+    )
     html_file.write_text(html_content)
     
     print(f"Opening popup window...", file=sys.stderr)
